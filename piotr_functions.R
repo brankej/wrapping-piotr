@@ -80,7 +80,8 @@ multi_piotr <- function(worth,
                        piotr_path, 
                        l, 
                        out_f_name, 
-                       tmp_f_name, 
+                       tmp_f_name,
+                       rm, #rockmask flag
                        iter) {
   "piotr wrapper function to be called in parallel"
   
@@ -92,16 +93,23 @@ multi_piotr <- function(worth,
     tmpout = file.path(dirname(piotr_path),tmp_f_name, sprintf("tmp_%s.asc", iter))
     tmp_cropped = rast(tmpout)
     
-    #
-    tmpout_rm = file.path(dirname(piotr_path),tmp_f_name, sprintf("tmp_rm_%s.asc", iter))
-    tmp_cropped_rockmask = rast(tmpout_rm)
+    if (isTRUE(rm)) {
+      tmpout_rm = file.path(dirname(piotr_path),tmp_f_name, sprintf("tmp_rm_%s.asc", iter))
+      tmp_cropped_rockmask = rast(tmpout_rm)
+    }
     
     #create tmp out dir
     dir.create(file.path(dirname(piotr_exe), out_f_name, sprintf("tmp_%s", iter)))
     
-    # call piotr
-    system(sprintf("%s -l %s -d %s -m %s %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)),tmpout_rm, tmpout),show.output.on.console = F, wait = T)
-    
+    if (isTRUE(rm)) {
+      # call piotr
+      system(sprintf("%s -l %s -d %s -m %s %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)),tmpout_rm, tmpout),show.output.on.console = F, wait = T)
+      
+    } else {
+      # call piotr
+      system(sprintf("%s -l %s -d %s -m %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)), tmpout),show.output.on.console = F, wait = T)
+    }
+      
     #rename outfiles to get rid of random names
     fl = list.files(file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)))
     for (ii in fl) {

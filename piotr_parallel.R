@@ -22,16 +22,19 @@ library(tcltk)
 
 ################ FUNCTIONS ################
 
-source("piotr_functions.R")
+
+source(file.path(r"(C:\Users\dnb\Desktop\wrapping-piotr)","piotr_functions.R"))
 
 ################ INIT #####################
 
+
+rockmask = F
 
 # initial paths
 DGM_path = r"(G:\TIROL_DGM\DGM_Tirol_5m_epsg31254.tif)" # path to DGM
 piotr_exe = r"(G:\piotr_tests\PiotrWin64\Piotr\piotr.exe)" #path to piotr.exe
 AOI_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\AOI_Venediger_31254.shp)" #path to AOI shp
-rockmask_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\FELS_Polygone_31254.shp)" #path to rockmask shp
+rockmask_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\FELS_Polygone_31254.shp)" #path to rockmask shp (optional if wanted => rockmask = T)
 
 # piotr params
 l = 15
@@ -84,10 +87,13 @@ cte = create_tiles_ext(DGM, n_row = n_size, n_col = n_size, overlap = overlap)
 # extent initial DGM for overlap tiles
 DGM_ext = extend(DGM, cte$new_ext, fill = na)
 
-#rasterize rockmask
-rockmask.r = rasterize(rockmask, DGM_ext)
-rockmask.r <- classify(rockmask.r, cbind(NAflag(rockmask.r), 0))
-NAflag(rockmask.r) = na
+
+if (isTRUE(rockmask)) {
+  #rasterize rockmask
+  rockmask.r = rasterize(rockmask, DGM_ext)
+  rockmask.r <- classify(rockmask.r, cbind(NAflag(rockmask.r), 0))
+  NAflag(rockmask.r) = na
+}
 
 ################ MAIN #####################
 
@@ -101,9 +107,11 @@ for (i in seq(1, length(cte$xy_ol_lst))) {
   tmp_cropped = crop(DGM_ext, ext(unname(cte$xy_ol_lst[[i]])))
   NAflag(tmp_cropped) = na #account for NAs
   
-  #crop rockmask by extent
-  tmp_cropped_rockmask = crop(rockmask.r, ext(unname(cte$xy_ol_lst[[i]])))
-  NAflag(tmp_cropped_rockmask) = na #account for NAs
+  if (isTRUE(rockmask)) {
+    #crop rockmask by extent
+    tmp_cropped_rockmask = crop(rockmask.r, ext(unname(cte$xy_ol_lst[[i]])))
+    NAflag(tmp_cropped_rockmask) = na #account for NAs
+  }
   
   #check whether all values NA
   if (unname(allNA(tmp_cropped)[1])[[1]] == T) {
@@ -112,9 +120,12 @@ for (i in seq(1, length(cte$xy_ol_lst))) {
     worth_checking_i = append(worth_checking_i, i)
     tmpout = file.path(dirname(piotr_exe),"tmp", sprintf("tmp_%s.asc", i))
     writeRaster(tmp_cropped, tmpout, NAflag = na, overwrite = T) 
-    #
-    tmpout_rm = file.path(dirname(piotr_exe),"tmp", sprintf("tmp_rm_%s.asc", i))
-    writeRaster(tmp_cropped_rockmask, tmpout_rm, NAflag = na, overwrite = T)
+    
+    if (isTRUE(rockmask)) {
+      # rockmask tmp
+      tmpout_rm = file.path(dirname(piotr_exe),"tmp", sprintf("tmp_rm_%s.asc", i))
+      writeRaster(tmp_cropped_rockmask, tmpout_rm, NAflag = na, overwrite = T)
+    }
     
   }
   cat("\r","finished percent: ", i/length(cte$xy_ol_lst)*100)
@@ -142,7 +153,7 @@ st = Sys.time() #get starttime
 
 finalMatrix <- foreach(i = 1:ntasks, .packages = c("terra"),.options.snow = opts, .verbose = T, .errorhandling = "stop") %dopar% {   ##load packages for forech!  #.combine=rbind #'pass'
   
-  prog = multi_piotr(worth = worth_checking_i, extent = cte$xy_ol_lst, piotr_path = piotr_exe, l = l, out_f_name = "out", tmp_f_name = "tmp", iter = i) #calling a function
+  prog = multi_piotr(worth = worth_checking_i, extent = cte$xy_ol_lst, piotr_path = piotr_exe, l = l, out_f_name = "out", tmp_f_name = "tmp", rm = rockmask, iter = i) #calling a function
   #do other things if you want
   
   prog #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
