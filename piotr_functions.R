@@ -107,7 +107,7 @@ multi_piotr <- function(worth,
       
     } else {
       # call piotr
-      system(sprintf("%s -l %s -d %s -m %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)), tmpout),show.output.on.console = F, wait = T)
+      system(sprintf("%s -l %s -d %s %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)), tmpout),show.output.on.console = F, wait = T) #if show.output.on.console = T -> piotr prints
     }
       
     #rename outfiles to get rid of random names

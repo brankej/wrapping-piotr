@@ -23,23 +23,25 @@ library(tcltk)
 ################ FUNCTIONS ################
 
 
-source(file.path(r"(C:\Users\dnb\Desktop\wrapping-piotr)","piotr_functions.R"))
+script_folder = r"(C:\Users\dnb\Desktop\wrapping-piotr)" #EDIT HERE
+
+source(file.path(script_folder ,"piotr_functions.R"))
 
 ################ INIT #####################
 
 
-rockmask = F
+rockmask = F # if no rockmask given!
 
 # initial paths
-DGM_path = r"(G:\TIROL_DGM\DGM_Tirol_5m_epsg31254.tif)" # path to DGM
-piotr_exe = r"(G:\piotr_tests\PiotrWin64\Piotr\piotr.exe)" #path to piotr.exe
-AOI_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\AOI_Venediger_31254.shp)" #path to AOI shp
-rockmask_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\FELS_Polygone_31254.shp)" #path to rockmask shp (optional if wanted => rockmask = T)
+DGM_path = r"(G:\TIROL_DGM\DGM_Tirol_5m_epsg31254.tif)" #EDIT HERE path to DGM 
+piotr_exe = r"(G:\piotr_tests\PiotrWin64\Piotr\piotr.exe)" #EDIT HERE path to piotr.exe
+AOI_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\AOI_Venediger_31254.shp)" #EDIT HERE path to AOI shp
+rockmask_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\FELS_Polygone_31254.shp)" #EDIT HERE path to rockmask shp (optional if wanted => rockmask = T)
 
 # piotr params
-l = 15
-overlap = 50
-n_size  = 400
+l = 15 # piotr param
+overlap = 50 # meters
+n_size  = 400 # kacheln = kacheln * DGM spacing
 
 ################ BEGIN #####################
 
@@ -68,7 +70,7 @@ if (isTRUE(rockmask)) {
 }
 
 #clip to AOI
-DGM = crop(DGM, ext(AOI))
+DGM = crop(DGM, ext(AOI)) # check if same crs
 
 # rast features
 resol = res(DGM)
@@ -99,8 +101,7 @@ if (isTRUE(rockmask)) {
 
 ################ MAIN #####################
 
-#prepare ASC
-#crop big by extent
+################# prepare ASC crop big by extent #####################
 message("Cropping BIG Raster by extent")
 worth_checking_i = c()
 not_worth_checking_i = c()
@@ -130,7 +131,7 @@ for (i in seq(1, length(cte$xy_ol_lst))) {
     }
     
   }
-  cat("\r","finished percent: ", i/length(cte$xy_ol_lst)*100)
+  cat("\r","finished percent: ", round(i/length(cte$xy_ol_lst)*100, 2))
 }
 cat("")
 
@@ -138,6 +139,7 @@ cat("")
 #https://stackoverflow.com/questions/70191164/null-value-passed-as-symbol-address-error-in-foreach-loop-r
 
 
+################# piotr multi call per core #####################
 
 message("Multi Piotr")
 # #setup parallel backend to use many processors
@@ -165,7 +167,7 @@ stopCluster(cl) #stop cluster
 close(pb) #close progress
 
 
-#delete empty tmp folders
+# delete empty tmp folders
 folders <- list.dirs(path = file.path(dirname(piotr_exe),"out") ,recursive = FALSE)
 for (folder in folders) {
   if (length(dir(folder)) == 0) {
@@ -176,6 +178,7 @@ for (folder in folders) {
 
 progress_report = bind_rows(finalMatrix) #combine
 
+write.table(x = progress_report, file = file.path(bapiotr_path, "progress_report.txt"), quote = F, row.names = F) #writeprogress report to csv file
 
 ##checks
 print(sprintf("Average time per worked step %s min. %s sec.",unlist(strsplit(x = as.character(round(mean(progress_report$end_step[progress_report$worked == T]),digits = 2)), split = ".",fixed = T))[1], as.numeric(unlist(strsplit(x = as.character(round(mean(progress_report$end_step[progress_report$worked == T]),digits = 2)), split = ".",fixed = T))[2])/100*60)) #mean time in minutes per worked step
@@ -186,14 +189,18 @@ print(sprintf("Total time needed %s min. %s sec.",unlist(strsplit(x = as.charact
 #gpath=r"(C:\Users\dnb\Desktop\piotr_tests\PiotrWin64\Piotr\tmp)"
 #worth_checking_i = sort(as.numeric(gsub(x=gsub(x=list.files(gpath, pattern = "tmp_rm_.*.prj"), replacement = "", pattern = "tmp_rm_",fixed = T), replacement = "", pattern=".prj", fixed = T)))
 
+
+################# mosaicing #####################
+
+
 # mosaic to final res
 rlist_RH = list()
 rlist_SR = list()
 
 # read out tiles into list and also remove overlap for better matching
 for (i in seq(1,length(worth_checking_i))) {
-  rlist_RH[[i]] = crop(rast(file.path(dirname(piotr_exe),"out", sprintf("RH_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - rep(overlap*2,4))
-  rlist_SR[[i]] = crop(rast(file.path(dirname(piotr_exe),"out", sprintf("SR_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - rep(overlap*2,4))
+  rlist_RH[[i]] = crop(rast(file.path(dirname(piotr_exe),"out", sprintf("RH_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - rep(overlap*4,4)) #overlap real = 250!!
+  rlist_SR[[i]] = crop(rast(file.path(dirname(piotr_exe),"out", sprintf("SR_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - rep(overlap*4,4))
 }
 
 
@@ -218,3 +225,4 @@ message("Done!")
 
 # TODO
 # maybe add reason to why not worked = DGM not existing / DGM all NAs / no Rockmask / ...
+# histogram matching? check
