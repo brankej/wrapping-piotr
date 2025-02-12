@@ -62,8 +62,10 @@ DGM = rast(DGM_path)
 #read AOI 
 AOI = vect(AOI_path)
 
-#read rock mask
-rockmask = vect(rockmask_path)
+if (isTRUE(rockmask)) {
+  #read rock mask
+  rockmask = vect(rockmask_path)
+}
 
 #clip to AOI
 DGM = crop(DGM, ext(AOI))
