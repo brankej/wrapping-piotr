@@ -75,20 +75,22 @@ write_png_wld <- function(ext_obj,
   return(out)
 }
 
-multi_piotr <- function(worth,
-                       extent, 
-                       piotr_path, 
-                       l, 
-                       out_f_name, 
-                       tmp_f_name,
+multi_piotr <- function(worth, #if tiles necessary to check (numeric)
+                       extent, # extent of that tile
+                       piotr_path, # path to piotr_exe
+                       l, # piotr param
+                       out_f_name, #out folder
+                       tmp_f_name, #tmp folder
                        rm, #rockmask flag
-                       iter) {
+                       st, #start time
+                       resol, # resolution of dgm for png wld
+                       iter) { # tile iter
   "piotr wrapper function to be called in parallel"
   
   tile = sprintf("tile_%s",iter)
   worked = T
   sti = Sys.time() #get init time per step
-  if (i %in% worth) {
+  if (iter %in% worth) {
     # do normal
     tmpout = file.path(dirname(piotr_path),tmp_f_name, sprintf("tmp_%s.asc", iter))
     tmp_cropped = rast(tmpout)
@@ -99,15 +101,26 @@ multi_piotr <- function(worth,
     }
     
     #create tmp out dir
-    dir.create(file.path(dirname(piotr_exe), out_f_name, sprintf("tmp_%s", iter)))
+    dir.create(file.path(dirname(piotr_path), out_f_name, sprintf("tmp_%s", iter)))
     
     if (isTRUE(rm)) {
       # call piotr
-      system(sprintf("%s -l %s -d %s -m %s %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)),tmpout_rm, tmpout),show.output.on.console = F, wait = T)
+      system(sprintf("%s -l %s -d %s -m %s %s", 
+                     piotr_path, 
+                     l,
+                     file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)),
+                     tmpout_rm, 
+                     tmpout),
+             show.output.on.console = F, wait = T)
       
     } else {
       # call piotr
-      system(sprintf("%s -l %s -d %s %s", piotr_exe, l,file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)), tmpout),show.output.on.console = F, wait = T) #if show.output.on.console = T -> piotr prints
+      system(sprintf("%s -l %s -d %s %s", 
+                     piotr_path, 
+                     l,
+                     file.path(dirname(piotr_path),out_f_name, sprintf("tmp_%s", iter)), 
+                     tmpout),
+             show.output.on.console = F, wait = T) #if show.output.on.console = T -> piotr prints
     }
       
     #rename outfiles to get rid of random names
