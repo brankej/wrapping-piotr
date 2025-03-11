@@ -25,8 +25,7 @@ rm(list = ls()) # clean up
 #VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 # FUNCTIONS
-script_folder = r"(C:\Users\dnb\Desktop\wrapping-piotr)" #EDIT HERE
-source(file.path(script_folder ,"piotr_functions.R"))
+source("piotr_functions.R", chdir = T)
 
 # initial paths
 DGM_path = r"(G:\TIROL_DGM\DGM_Tirol_5m_epsg31254.tif)" #EDIT HERE path to DGM 
@@ -227,16 +226,51 @@ rsrc_RH = sprc(rlist_RH)
 rsrc_SR = sprc(rlist_SR)
 
 # testing output to all different mosaic functions
-mode_m = c("sum", "mean", "median", "min", "max")
+mode_m = c("sum", "mean", "median", "min", "max", "first", "last")
 
 for (i in seq(1,length(mode_m))) {
-  # create mosaics
-  m_RH = mosaic(rsrc_RH, fun = mode_m[i])
   
-  if (isTRUE(stretching)) {
-    m_RH = stretch(m_RH, maxcell = length(cells(m_RH))/2) #attempt stretching ?stretch
+  if (i %in% c("sum", "mean", "median", "min", "max")) {
+    # create mosaics
+    m_RH = mosaic(rsrc_RH, fun = mode_m[i])
+    
+    if (isTRUE(stretching)) {
+      m_RH = stretch(m_RH, maxcell = length(cells(m_RH))/2) #attempt stretching ?stretch
+    }
+    m_SR = mosaic(rsrc_SR, fun = mode_m[i])
+    
+    if (isTRUE(stretching)) {
+      m_SR = stretch(m_SR, maxcell = length(cells(m_SR))/2) #attempt stretching ?stretch
+    }
   }
-  m_SR = mosaic(rsrc_SR, fun = mode_m[i])
+  
+  if (i %in% c("first", "last")) {
+    
+    if (mode_m == "first") {
+      # write merge
+      m_RH = merge(rsrc_RH, first = T)
+      if (isTRUE(stretching)) {
+        m_RH = stretch(m_RH, maxcell = length(cells(m_RH))/2) #attempt stretching ?stretch
+      }
+      
+      m_SR = merge(rsrc_SR, first = T)
+      if (isTRUE(stretching)) {
+        m_SR = stretch(m_SR, maxcell = length(cells(m_SR))/2) #attempt stretching ?stretch
+      }
+    }
+    
+    if (i == "last") {
+      # write merge
+      m_RH = merge(rsrc_RH, first = F)
+      if (isTRUE(stretching)) {
+        m_RH = stretch(m_RH, maxcell = length(cells(m_RH))/2) #attempt stretching ?stretch
+      }
+      m_SR = merge(rsrc_SR, first = F)
+      if (isTRUE(stretching)) {
+        m_SR = stretch(m_SR, maxcell = length(cells(m_SR))/2) #attempt stretching ?stretch
+      }
+    }
+  }
   
   # write mosaics
   writeRaster(m_RH, file.path(dirname(piotr_exe),output_folder,sprintf("ALL_RH_%s.tif", mode_m[i])), overwrite = T)

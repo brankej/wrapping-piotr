@@ -16,7 +16,7 @@ library(terra)
 
 
 ################ FUNCTIONS #####################
-source("piotr_functions.R")
+source("piotr_functions.R", chdir = T)
 
 ################ INIT #####################
 
