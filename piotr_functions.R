@@ -13,9 +13,10 @@
 
 ################ FUNCTIONS #####################
 create_tiles_ext <- function(x,
-                             n_row = 5000, 
-                             n_col = 5000, 
-                             overlap = 500) {
+                             n_row = 5000, #cells
+                             n_col = 5000, #cells
+                             overlap = 500, #cells
+                             crop_overlap_factor = 1) { 
   "function to prepare extents for tiling with overlap"
   "https://stackoverflow.com/a/77562355"
   require(terra)
@@ -30,7 +31,7 @@ create_tiles_ext <- function(x,
   xy_ul <- xyFromCell(x, cells)
   
   # Resolution
-  rs <- res(x)
+  rs <- res(x) # get metric resolution
   
   # Create matrix of extents (one ext per row)
   xy <- cbind(
@@ -57,7 +58,11 @@ create_tiles_ext <- function(x,
   return(list(
     xy_lst    = xy_lst,
     xy_ol_lst = xy_ol_lst,
-    new_ext   = ext(x)
+    new_ext   = ext(x),
+    rm_overlap = c((overlap * rs[1])/crop_overlap_factor, 
+                   (overlap * rs[1])/crop_overlap_factor,
+                   (overlap * rs[2])/crop_overlap_factor,
+                   (overlap * rs[2])/crop_overlap_factor)
   ))
   
 }
