@@ -29,12 +29,12 @@ rm(list = ls()) # clean up
 source("piotr_functions.R", chdir = T)
 
 # initial paths
-DGM_path = r"(G:\TIROL_DGM\DGM_Tirol_5m_epsg31254.tif)" #EDIT HERE path to DGM 
-AOI_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\AOI_Venediger_31254.shp)" #EDIT HERE path to AOI shp
-rockmask_path = r"(G:\piotr_tests\PiotrWin64\Piotr\data\FELS_Polygone_31254.shp)" #EDIT HERE path to rockmask shp (optional if wanted => rockmask = T)
+DGM_path = r"(/mnt/nvm2_data/TIROL_DGM/DGM_Tirol_5m_epsg31254.tif)" #EDIT HERE path to DGM 
+AOI_path = r"(/mnt/nvm2_data/piotr_tests/PiotrWin64/Piotr/data/AOI_Venediger_31254.shp)" #EDIT HERE path to AOI shp
+rockmask_path = r"(/mnt/nvm2_data/piotr_tests/PiotrWin64/Piotr/data/FELS_Polygone_31254.shp)" #EDIT HERE path to rockmask shp (optional if wanted => rockmask = T)
 rockmask = T # if no rockmask given F!
 clip_RH_rockmask = T # if a rockmask is given -> should final RH mosaic be masked by rockmask
-piotr_exe = r"(G:\piotr_tests\PiotrWin64\Piotr\piotr.exe)" #EDIT HERE path to piotr.exe
+piotr_exe = r"(/mnt/nvm2_data/piotr_tests/PiotrLinux64/piotr.exe)" #EDIT HERE path to piotr.exe
 working_dir = dirname(piotr_exe) # or different
 temp_folder = "tmp" # temporary folder for asc grids
 output_folder = "out" # folder final grids
@@ -50,8 +50,7 @@ crop_overlap_factor = 1 # to fully remove overlap in final merge -> 1 | for half
 
 # mosaicking / merging
 stretching = T
-mode_m = c("sum", "mean", "median", "min", "max", "first", "last") #c("mean") 
-# mosaicking /merging functions | use minimum 1 
+mode_m = c("mean")#c("sum", "mean", "median", "min", "max", "first", "last") #mosaicking /merging functions | use minimum 1 
 # only really takes effect if crop_overlap_factor > 1
 
 #AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -256,6 +255,7 @@ for (i in seq(1,length(worth_checking_i))) {
   rlist_RH[[i]] = crop(rast(file.path(dirname(piotr_exe),output_folder, sprintf("RH_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - cte$rm_overlap) 
   rlist_SR[[i]] = crop(rast(file.path(dirname(piotr_exe),output_folder, sprintf("SR_%s.png", worth_checking_i[i]))), ext(unname(cte$xy_ol_lst[[worth_checking_i[i]]])) - cte$rm_overlap)
 }
+
 
 # many SpatRasters to SpatRasterCollection 
 rsrc_RH = sprc(rlist_RH)
